@@ -5,7 +5,11 @@
 #define LED_PIN 8
 #define CAN_CS  0
 
-int analogPin = 2;
+int previousSensor1 = 0;
+int previousSensor2 = 0;
+int previousSensor3 = 0;
+
+#define CHANGE_THRESHOLD 10
 
 MCP_CAN CAN(CAN_CS);
 uint8_t uniqueID[10];
@@ -16,43 +20,15 @@ void blink(byte count)
   for (byte i = 0; i < count; i++)
   {
     digitalWrite(LED_PIN, HIGH);
-    delay(250);
+    delay(25);
     digitalWrite(LED_PIN, LOW);
-    delay(250);
+    delay(25);
   }
-
-  delay(500);
 }
 
-void transmit(byte data[8])
-{
-  // Send CAN message
-  byte result = CAN.sendMsgBuf(canID, 0, 8, data);
-
-  if (result == CAN_OK)
-  {
-    // Message sent successfully
-    Serial.println(result);
-    blink(1);
-  }else
-    {
-      Serial.print("readMsgBuf failed, err=");
-      Serial.println(result);
-      Serial.print("CAN error = 0x");
-      Serial.println(CAN.getError(), HEX);
-
-      Serial.print("TX errors = ");
-      Serial.println(CAN.errorCountTX());
-
-      Serial.print("RX errors = ");
-      Serial.println(CAN.errorCountRX());
-    }
-  
-}
 
 void setup()
 {
-  Serial.begin(19200);
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW);
 
@@ -78,6 +54,7 @@ void setup()
   {
     // 5 blinks = MCP2515 did NOT respond
     blink(5);
+    while(1);
   }
  
   CAN.setMode(MCP_NORMAL);
@@ -98,15 +75,46 @@ void setup()
   canID = hash & 0x7FF;
 }
 
+void read_sensors()
+{
+    int sensor1 = analogRead(2);
+    if (abs(sensor1 - previousSensor1) >= CHANGE_THRESHOLD)
+    {
+        sendSensorEvent(1, sensor1);
+        previousSensor1 = sensor1;
+    }
+    int sensor2 = analogRead(3);
+    if (abs(sensor2 - previousSensor2) >= CHANGE_THRESHOLD)
+    {
+        sendSensorEvent(2, sensor2);
+        previousSensor2 = sensor2;
+    }
+    int sensor3 = analogRead(5);
+    if (abs(sensor3 - previousSensor3) >= CHANGE_THRESHOLD)
+    {
+        sendSensorEvent(3, sensor3);
+        previousSensor3 = sensor3;
+    }
+    delay(25);
+}
+void sendSensorEvent(byte sensor, int value)
+{
+    byte data[3];
 
+    data[0] = sensor;
+    data[1] = highByte(value);
+    data[2] = lowByte(value);
+
+    byte result = CAN.sendMsgBuf(canID, 0, 3, data);
+    if (result == CAN_OK)
+  {
+    blink(1);
+  }
+}
 
 void loop()
 {
-  int val  = analogRead(analogPin);
-  byte data[8] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
-  data[0] = highByte(val);
-  data[1] = lowByte(val);
-  
-  transmit(data);
-  delay(1000); 
+  read_sensors();
+
+  //delay(1000); 
 }

@@ -11,12 +11,10 @@ void blink(byte count)
   for (byte i = 0; i < count; i++)
   {
     digitalWrite(LED_PIN, HIGH);
-    delay(250);
+    delay(25);
     digitalWrite(LED_PIN, LOW);
-    delay(250);
+    delay(25);
   }
-
-  delay(500);
 }
 
 void setup()
@@ -47,49 +45,41 @@ void setup()
 
   Serial.println("Waiting for CAN messages...");
 }
-
 void loop()
 {
-  // Using a 'while' loop ensures we completely clear both hardware buffers
   while (!digitalRead(CAN_INT))
   {
     unsigned long id;
     byte len;
     byte buf[8];
 
-    // Read CAN message (This automatically clears the hardware interrupt pin)
     if (CAN0.readMsgBuf(&id, &len, buf) == CAN_OK)
     {
-      Serial.print("ID: 0x");
-      blink(1);
-      // Check if it's a 29-bit Extended ID based on its value size
-      bool isExtended = (id > 0x7FF);
-
-      // Print padding zeros to align the ID neatly in the Serial Monitor
-      if (isExtended) {
-        if (id < 0x10000000) Serial.print("0");
-        if (id < 0x1000000)  Serial.print("0");
-        if (id < 0x100000)   Serial.print("0");
-        if (id < 0x10000)    Serial.print("0");
-      }
-      if (id < 0x1000)     Serial.print("0");
-      if (id < 0x100)      Serial.print("0");
-      if (id < 0x10)       Serial.print("0");
-      
-      Serial.print(id, HEX);
-      if (isExtended) Serial.print(" (Ext)");
-
-      Serial.print("  DLC: ");
-      Serial.print(len);
-      Serial.print("  DATA: ");
-
-      for (byte i = 0; i < len; i++)
+      // Make sure this is one of our sensor messages
+      if (len >= 3)
       {
-        if (buf[i] < 0x10) Serial.print("0");
-        Serial.print(buf[i], HEX);
-        Serial.print(" ");
+        // CAN ID = sensor board
+        unsigned long boardID = id;
+
+        // Byte 0 = sensor number
+        byte sensor = buf[0];
+
+        // Bytes 1 and 2 = original analogue value
+        int value = ((int)buf[1] << 8) | buf[2];
+
+        Serial.print("Board ID: 0x");
+        Serial.println(boardID, HEX);
+
+        Serial.print("Sensor: ");
+        Serial.println(sensor);
+
+        Serial.print("Value: ");
+        Serial.println(value);
+
+        Serial.println("----------------");
+
+        blink(1);
       }
-      Serial.println();
     }
   }
 }

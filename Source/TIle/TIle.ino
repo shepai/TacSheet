@@ -9,7 +9,13 @@ int previousSensor1 = 0;
 int previousSensor2 = 0;
 int previousSensor3 = 0;
 
-#define CHANGE_THRESHOLD 10
+#define MUX_S0 13  // pick 4 free digital pins
+#define MUX_S1 12
+#define MUX_S2 11
+#define MUX_S3 10
+#define MUX_SIG 4  // the one ADC pin
+
+#define CHANGE_THRESHOLD 40
 
 MCP_CAN CAN(CAN_CS);
 uint8_t uniqueID[10];
@@ -25,10 +31,27 @@ void blink(byte count)
     delay(25);
   }
 }
-
-
+int readMuxChannel(byte channel) {
+  selectMuxChannel(channel);
+  int sum=0;
+  for(int i=0;i<5;i++){
+    sum+=analogRead(MUX_SIG);
+  }
+  return sum/5;
+}
+void selectMuxChannel(byte channel) {
+  digitalWrite(MUX_S0, channel & 0x01);
+  digitalWrite(MUX_S1, (channel >> 1) & 0x01);
+  digitalWrite(MUX_S2, (channel >> 2) & 0x01);
+  digitalWrite(MUX_S3, (channel >> 3) & 0x01);
+  delayMicroseconds(10); // let mux switch settle before sampling
+}
 void setup()
 {
+  pinMode(MUX_S0, OUTPUT);
+  pinMode(MUX_S1, OUTPUT);
+  pinMode(MUX_S2, OUTPUT);
+  pinMode(MUX_S3, OUTPUT);
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW);
 
@@ -73,29 +96,29 @@ void setup()
 
   // Force the layout to fit a 29-bit CAN frame limit
   canID = hash & 0x7FF;
+  selectMuxChannel(0);
 }
 
 void read_sensors()
 {
-    int sensor1 = analogRead(2);
+    int sensor1 = readMuxChannel(0);
     if (abs(sensor1 - previousSensor1) >= CHANGE_THRESHOLD)
     {
         sendSensorEvent(1, sensor1);
         previousSensor1 = sensor1;
     }
-    int sensor2 = analogRead(3);
+    int sensor2 = readMuxChannel(1);
     if (abs(sensor2 - previousSensor2) >= CHANGE_THRESHOLD)
     {
         sendSensorEvent(2, sensor2);
         previousSensor2 = sensor2;
     }
-    int sensor3 = analogRead(5);
+    int sensor3 = readMuxChannel(2);
     if (abs(sensor3 - previousSensor3) >= CHANGE_THRESHOLD)
     {
         sendSensorEvent(3, sensor3);
         previousSensor3 = sensor3;
     }
-    delay(25);
 }
 void sendSensorEvent(byte sensor, int value)
 {

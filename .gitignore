@@ -1,2 +1,11 @@
 
 /PCB/Sheet/Sheet-backups
+PCB/Sheet/fabrication-toolkit-options.json
+PCB/Sheet/fp-info-cache
+*.zip
+PCB/TactileSheet/fabrication-toolkit-options.json
+PCB/TactileSheet/tatilesheet/fp-info-cache
+PCB/TactileSheet/tatilesheet/replicate_layout.log
+PCB/Sheet/sym-lib-table
+PCB/TactileSheet/tatilesheet/tatilesheet.kicad_prl
+PCB/TactileSheet/tatilesheet/tatilesheet.kicad_pro

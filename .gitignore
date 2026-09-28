@@ -10,3 +10,8 @@ PCB/Sheet/sym-lib-table
 PCB/TactileSheet/tatilesheet/tatilesheet.kicad_prl
 PCB/TactileSheet/tatilesheet/tatilesheet.kicad_pro
 *.kicad_pro
+*.lck
+*.kicad_prl
+PCB/Type2 sheet/\#auto_saved_files\#
+PCB/Type2 sheet/fabrication-toolkit-options.json
+*.bak
